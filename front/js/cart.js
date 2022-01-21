@@ -1,3 +1,6 @@
+/**
+ * Display products in cart from local storage cart and api data
+ */
 function getCartProducts () {
     fetch("http://localhost:3000/api/products")
     .then(function(res) {
@@ -69,8 +72,10 @@ function getCartProducts () {
     });
 }
 
-getCartProducts()
-
+/**
+ * Change product quantity in cart
+ * @param { Event } e
+ */
 function changeQuantity(e) {
     const [ cart, index ] = getCartAndProductIndex(e)
     cart[index].quantity = parseInt(e.target.value)
@@ -78,6 +83,10 @@ function changeQuantity(e) {
     getCartProducts()
 }
 
+/**
+ * Remove a product from cart
+ * @param { Event } e
+ */
 function removeFromCart(e) {
     const [ cart, index ] = getCartAndProductIndex(e)
     cart.splice(index, 1)
@@ -85,14 +94,31 @@ function removeFromCart(e) {
     getCartProducts()
 }
 
+/**
+ * get product id and color when user click on dom product children
+ * @param { Event } e
+ * @return { Object }
+ */
 function getProductIdAndColor(e) {
     return e.target.closest(".cart__item").dataset
 }
 
+/**
+ * get index of a product in cart from its id and color
+ * @param { Object[] } cart
+ * @param { String } productId
+ * @param { String } color
+ * @return { Number }
+ */
 function getCartIndex(cart, productId, color) {
     return cart.findIndex(cartItem => cartItem.color === color && cartItem.productId === productId)
 }
 
+/**
+ * get cart and product index in cart
+ * @param { Event } e
+ * @return { [ Object , Number] }
+ */
 function getCartAndProductIndex(e) {
     const { id, color } = getProductIdAndColor(e)
     
@@ -106,21 +132,107 @@ function getCartAndProductIndex(e) {
     return [cart, index]
 }
 
+/**
+ * Check if a string has between 1 and 99 characters
+ * @param { String } value
+ * @return { Boolean }
+ */
 function notEmptyNotTooLong (value) {
     return value.length > 0 && value.length < 100
 }
 
+/**
+ * Check if a string is a valid email address
+ * @param { String } value
+ * @return { Boolean }
+ */
 function isValidEmail (value) {
     return /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(value)
 }
 
+/**
+ * Get contact object from fields array
+ * @param { Object[] } fields
+ * @param { String } fields[].id field id in DOM
+ * @param { Function(value<String>) } fields[].validation field validation method
+ * @param { String } fields[].errorMsg Error message if invalid data in field
+ * @return { Object } Contact object
+ */
 function getContactObject (fields) {
     return Object.fromEntries(fields.map(field => [field.id, document.getElementById(field.id).value]))
 }
 
+/**
+ * Check if fields have valid data
+ * @param { Object } field
+ * @param { String } field.id field id in DOM
+ * @param { Function(value<String>) } field.validation field validation method
+ * @param { String } field.errorMsg Error message if invalid data in field
+ * @return { Boolean } Valid data
+ */
 function fieldIsValid (field) {
     return field.validation(document.getElementById(field.id).value)
 }
+
+/**
+ * handle click on form submit button
+ * @param { Object } contact
+ * @param { String } contact.firstName Buyer first name
+ * @param { String } contact.lastName Buyer last name
+ * @param { String } contact.address Buyer address
+ * @param { String } contact.city Buyer city
+ * @param { String } contact.email Buyer email
+ */
+ function handleSubmit (contact) {
+    let productsIds=[]
+    console.log(localStorage.cart)
+    const data = JSON.parse(localStorage.cart)
+    for (let i=0 ; i< data.length ; i++) {
+        const item = data[i]
+        productsIds.push(item.productId);
+    }
+    const postData = {
+        contact: contact,
+        products: productsIds
+    }
+    send(postData)
+}
+
+/**
+ * Send POST request to the api with order data
+ * @param { Object } postData
+ * @param { Object } postData.contact
+ * @param { String } postData.contact.firstName Buyer first name
+ * @param { String } postData.contact.lastName Buyer last name
+ * @param { String } postData.contact.address Buyer address
+ * @param { String } postData.contact.city Buyer city
+ * @param { String } postData.contact.email Buyer email
+ * @param { String[] } postData.products Array of products ids
+ */
+function send(postData) {
+    fetch('http://localhost:3000/api/products/order', {
+        method : "POST",
+        headers: { 
+            'Accept': 'application/json', 
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(postData),
+    }) 
+    .then(function(res){
+        if(res.ok){
+            return res.json()
+        }       
+    })
+    .then(function(value){
+        localStorage.clear();
+        document.location.href=`confirmation.html?orderId=${value.orderId}`
+    })
+    .catch(function(err){
+        console.log(`erreur ${err}`)
+    })
+}
+
+getCartProducts()
 
 const fields = [
     {
@@ -167,44 +279,3 @@ submitButton.addEventListener('click',function(e){
         handleSubmit(contact)
     }
 })
-    
-function handleSubmit (contact) {
-    let productsIds=[]
-    console.log(localStorage.cart)
-    const data = JSON.parse(localStorage.cart)
-    for (let i=0 ; i< data.length ; i++) {
-        const item = data[i]
-        // for (let j=1 ; j<= item.quantity ; j++) {
-            productsIds.push(item.productId);
-        // }
-    }
-    const postData = {
-        contact: contact,
-        products: productsIds
-    }
-    send(postData)
-}
-
-function send(postData) {
-
-    fetch('http://localhost:3000/api/products/order', {
-        method : "POST",
-        headers: { 
-            'Accept': 'application/json', 
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(postData),
-    }) 
-    .then(function(res){
-        if(res.ok){
-            return res.json()
-        }       
-    })
-    .then(function(value){
-        localStorage.clear();
-        document.location.href=`confirmation.html?orderId=${value.orderId}`
-    })
-    .catch(function(err){
-        console.log(`erreur ${err}`)
-    })
-}
