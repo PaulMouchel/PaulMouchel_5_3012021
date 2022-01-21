@@ -105,3 +105,106 @@ function getCartAndProductIndex(e) {
 
     return [cart, index]
 }
+
+function notEmptyNotTooLong (value) {
+    return value.length > 0 && value.length < 100
+}
+
+function isValidEmail (value) {
+    return /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(value)
+}
+
+function getContactObject (fields) {
+    return Object.fromEntries(fields.map(field => [field.id, document.getElementById(field.id).value]))
+}
+
+function fieldIsValid (field) {
+    return field.validation(document.getElementById(field.id).value)
+}
+
+const fields = [
+    {
+        id: "firstName",
+        validation: notEmptyNotTooLong,
+        errorMsg: "Le champ doit contenir entre 1 et 99 caractères"
+    },
+    {
+        id: "lastName",
+        validation: notEmptyNotTooLong,
+        errorMsg: "Le champ doit contenir entre 1 et 99 caractères"
+    },
+    {
+        id: "address",
+        validation: notEmptyNotTooLong,
+        errorMsg: "Le champ doit contenir entre 1 et 99 caractères"
+    },
+    {
+        id: "city",
+        validation: notEmptyNotTooLong,
+        errorMsg: "Le champ doit contenir entre 1 et 99 caractères"
+    },
+    {
+        id: "email",
+        validation: isValidEmail,
+        errorMsg: "Cet email n'est pas valide"
+    }
+]
+
+fields.forEach(field => {
+    document.getElementById(field.id).addEventListener('input', (e) => {
+        const value = e.target.value
+        document.getElementById(`${field.id}ErrorMsg`).innerText = field.validation(value) ? "" : field.errorMsg
+    });
+})
+
+const submitButton = document.getElementById("order")
+
+submitButton.addEventListener('click',function(e){
+    e.preventDefault()
+    const fieldsAreValid = fields.every(field => fieldIsValid(field))
+    if (fieldsAreValid) {
+        const contact = getContactObject(fields)
+        handleSubmit(contact)
+    }
+})
+    
+function handleSubmit (contact) {
+    let productsIds=[]
+    console.log(localStorage.cart)
+    const data = JSON.parse(localStorage.cart)
+    for (let i=0 ; i< data.length ; i++) {
+        const item = data[i]
+        // for (let j=1 ; j<= item.quantity ; j++) {
+            productsIds.push(item.productId);
+        // }
+    }
+    const postData = {
+        contact: contact,
+        products: productsIds
+    }
+    send(postData)
+}
+
+function send(postData) {
+
+    fetch('http://localhost:3000/api/products/order', {
+        method : "POST",
+        headers: { 
+            'Accept': 'application/json', 
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(postData),
+    }) 
+    .then(function(res){
+        if(res.ok){
+            return res.json()
+        }       
+    })
+    .then(function(value){
+        localStorage.clear();
+        document.location.href=`confirmation.html?orderId=${value.orderId}`
+    })
+    .catch(function(err){
+        console.log(`erreur ${err}`)
+    })
+}

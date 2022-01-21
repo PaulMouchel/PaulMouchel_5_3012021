@@ -20,6 +20,6 @@ function getAllProducts () {
         console.log(err)
         // Une erreur est survenue
     });
-  }
+}
 
-  getAllProducts()
+getAllProducts()
