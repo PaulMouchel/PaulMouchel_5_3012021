@@ -27,7 +27,15 @@ function getCartProducts () {
             }
         })
 
-        const htmlCart = cart.map(product => `
+        const htmlCart = cart.sort((a, b) => {
+            if(a.productId < b.productId) {
+                return -1
+            }
+            if(a.productId > b.productId) {
+                return 1
+            }
+            return 0
+        }).map(product => `
             <article class="cart__item" data-id="${product.productId}" data-color="${product.color}">
                 <div class="cart__item__img">
                     <img src=${product.imageUrl} alt="Photographie d'un canapé">
@@ -137,8 +145,17 @@ function getCartAndProductIndex(e) {
  * @param { String } value
  * @return { Boolean }
  */
-function notEmptyNotTooLong (value) {
+ function notEmptyNotTooLong (value) {
     return value.length > 0 && value.length < 100
+}
+
+/**
+ * Check if a string has between 1 and 99 characters
+ * @param { String } value
+ * @return { Boolean }
+ */
+function notEmptyNotTooLongNoNumbers (value) {
+    return notEmptyNotTooLong(value) && /^([^0-9]*)$/.test(value)
 }
 
 /**
@@ -226,6 +243,7 @@ function send(postData) {
     .then(function(value){
         localStorage.clear();
         document.location.href=`confirmation.html?orderId=${value.orderId}`
+        
     })
     .catch(function(err){
         console.log(`erreur ${err}`)
@@ -237,13 +255,13 @@ getCartProducts()
 const fields = [
     {
         id: "firstName",
-        validation: notEmptyNotTooLong,
-        errorMsg: "Le champ doit contenir entre 1 et 99 caractères"
+        validation: notEmptyNotTooLongNoNumbers,
+        errorMsg: "Le champ doit contenir entre 1 et 99 caractères sans chiffres"
     },
     {
         id: "lastName",
-        validation: notEmptyNotTooLong,
-        errorMsg: "Le champ doit contenir entre 1 et 99 caractères"
+        validation: notEmptyNotTooLongNoNumbers,
+        errorMsg: "Le champ doit contenir entre 1 et 99 caractères sans chiffres"
     },
     {
         id: "address",
